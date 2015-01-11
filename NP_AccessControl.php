@@ -1,4 +1,9 @@
 <?php
+/* Version History:
+* v1.41b-lm1 2015-01-12: by Leo (http://nucleus.slightlysome.net/leo)
+* - Tested and updated to run on PHP 5.4
+*/
+
 // plugin needs to work on Nucleus versions <=2.0 as well
 if (!function_exists('sql_table')){
 	function sql_table($name) {
@@ -9,9 +14,9 @@ if (!function_exists('sql_table')){
 class NP_AccessControl extends NucleusPlugin {
 
 	function getName() { return 'Access Control'; }
-	function getAuthor()  { return 'Andy'; }
-	function getURL() { return 'http://www.matsubarafamily.com/lab/'; }
-	function getVersion() { return '1.41b'; }
+	function getAuthor()  { return 'Andy, Leo'; }
+	function getURL() { return 'http://nucleus.slightlysome.net/plugins/accesscontrol'; }
+	function getVersion() { return '1.41b-lm1'; }
 	
 	function getDescription() { 
 		return _ACCSSCNTRL_DESCRIPTION;
