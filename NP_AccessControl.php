@@ -245,7 +245,7 @@ LOGINFORM;
 	}
 
 	function doTemplateCommentsVar(&$item, &$comment, $param1) {
-		doTemplateVar(&$item, $param1);
+		doTemplateVar($item, $param1);
 	}
 
 	function doTemplateVar(&$item, $param1) {
