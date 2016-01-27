@@ -16,7 +16,7 @@ class NP_AccessControl extends NucleusPlugin {
 	function getName() { return 'Access Control'; }
 	function getAuthor()  { return 'Andy, Leo'; }
 	function getURL() { return 'http://nucleus.slightlysome.net/plugins/accesscontrol'; }
-	function getVersion() { return '1.41b-lm1'; }
+	function getVersion() { return '1.42'; }
 	
 	function getDescription() { 
 		return _ACCSSCNTRL_DESCRIPTION;
