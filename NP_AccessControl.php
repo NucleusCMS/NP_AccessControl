@@ -4,13 +4,6 @@
 * - Tested and updated to run on PHP 5.4
 */
 
-// plugin needs to work on Nucleus versions <=2.0 as well
-if (!function_exists('sql_table')){
-	function sql_table($name) {
-		return 'nucleus_' . $name;
-	}
-}
-
 class NP_AccessControl extends NucleusPlugin {
 
 	function getName() { return 'Access Control'; }
