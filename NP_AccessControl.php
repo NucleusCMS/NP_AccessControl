@@ -15,8 +15,8 @@ class NP_AccessControl extends NucleusPlugin {
 
 	function getName() { return 'Access Control'; }
 	function getAuthor()  { return 'Andy, Leo'; }
-	function getURL() { return 'http://nucleus.slightlysome.net/plugins/accesscontrol'; }
-	function getVersion() { return '1.42'; }
+	function getURL() { return 'https://github.com/NucleusCMS/NP_AccessControl/'; }
+	function getVersion() { return '1.5'; }
 	
 	function getDescription() { 
 		return _ACCSSCNTRL_DESCRIPTION;
@@ -125,17 +125,21 @@ class NP_AccessControl extends NucleusPlugin {
 	}
 
 	function event_PreSkinParse(&$data) {
-		if ($this->doError && ($data['type'] != 'error')) {
-			ob_start(array(&$this, 'ob_DoNothing'));
-		}
+		
+		if (!$this->doError)          return;
+		if ($data['type'] == 'error') return;
+		
+		ob_start(array(&$this, 'ob_DoNothing'));
 	}
 	
 	function event_PostSkinParse(&$data) {
-		if ($this->doError && ($data['type'] != 'error')) {
-			ob_end_clean();
-			$GLOBALS['errormessage'] = $this->errorMessage;
-			$data['skin']->parse('error');
-		}
+		
+		if (!$this->doError)          return;
+		if ($data['type'] == 'error') return;
+		
+		ob_end_clean();
+		$GLOBALS['errormessage'] = $this->errorMessage;
+		$data['skin']->parse('error');
 	}
 
 	function testblog($data) {
@@ -163,16 +167,16 @@ class NP_AccessControl extends NucleusPlugin {
 		if (($this->getBlogOption($bid, 'login_needed') == "needlogin") && (!$member->isLoggedIn()))
 			return FALSE;
 		switch ($this->getItemOption($iid, 'restrict_this_item')) {
-		case 'nothing' :
-			break;
-		case 'needlogin' :
-			if (!$member->isLoggedIn()) return FALSE;
-			break;
-		case 'memberonly' :
-			if (!$member->isLoggedIn() || !$member->isTeamMember($bid)) return FALSE;
-			break;
+			case 'nothing' :
+				break;
+			case 'needlogin' :
+				if (!$member->isLoggedIn()) return FALSE;
+				break;
+			case 'memberonly' :
+				if (!$member->isLoggedIn() || !$member->isTeamMember($bid)) return FALSE;
+				break;
 		}
-		if ($this->getBlogOption($bid, 'skin_restriction') == "no")
+		if ($this->getBlogOption($bid, 'skin_restriction') == 'no')
 			return TRUE;
 		$blog = $manager->getBlog($bid);
 		$defaultskin = $blog->getDefaultSkin();
@@ -183,19 +187,17 @@ class NP_AccessControl extends NucleusPlugin {
 	}
 
 	function event_PreItem(&$data) {
-		$iid = $data['item']->itemid;
-		$bid = getBlogIDFromItemID($iid);
-		if (!$this->testitemcomment($bid, $iid)) {
-			$data['item']->title = _ACCSSCNTRL_ITEM_PROHIBIT;
-			$data['item']->body = '';
-			$data['item']->more = '';
-		}
+		$bid = getBlogIDFromItemID($data['item']->itemid);
+		if ($this->testitemcomment($bid,  $data['item']->itemid)) return;
+		
+		$data['item']->title = _ACCSSCNTRL_ITEM_PROHIBIT;
+		$data['item']->body = '';
+		$data['item']->more = '';
 	}
 
 	function event_PreComment(&$data) {
 		global $itemid;
 		$bid = $data['comment']['blogid'];
-//		$iid = $data['comment']['itemid'];
 		if (!$this->testitemcomment($bid, $itemid)) {
 			$data['comment'] = Array();
 		}
@@ -259,7 +261,7 @@ LOGINFORM;
 		switch ($param1) {
 		case 'checkin' :
 			if (!$this->testitemcomment($bid, $iid)) {
-				ob_start(array(&$this, 'ob_DoNothing'));
+				ob_start(array($this, 'ob_DoNothing'));
 			}
 			break;
 		case 'checkout' :
@@ -271,4 +273,3 @@ LOGINFORM;
 	}
 
 }
-?>
