@@ -110,7 +110,7 @@ class NP_AccessControl extends NucleusPlugin {
 				if (SKIN::exists($skinName)) {
 					$skin =& SKIN::createFromName($skinName);
 					// copied from NP_SkinSwitcher.php
-					$data['skin']->SKIN($skin->getID()); 
+					$data['skin'] = new SKIN($skin->getID()); 
 				}
 			} else {
 				$this->doError = TRUE;
