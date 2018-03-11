@@ -25,12 +25,15 @@ class NP_AccessControl extends NucleusPlugin {
 	}
 
 	function init() {
+		$this->plugin_admin_dir = str_replace('\\','/',__DIR__) . '/';
+		
 		// include language file for this plugin
 		$language = str_replace( array('\\','/'), '', getLanguageName());
-		if (file_exists($this->getDirectory().$language.'.php'))
-			include_once($this->getDirectory().$language.'.php');
+		$lang_dir = $this->getDirectory() . 'lang/';
+		if (is_file($lang_dir.$language.'.php'))
+			include_once($$lang_dir.$language.'.php');
 		else
-			include_once($this->getDirectory().'english.php');
+			include_once($lang_dir.'english.php');
 	}
 
 
