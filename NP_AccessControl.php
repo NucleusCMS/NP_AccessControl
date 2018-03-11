@@ -39,6 +39,101 @@ class NP_AccessControl extends NucleusPlugin {
 
 	function getEventList() { return array('InitSkinParse', 'PreSkinParse','PostSkinParse','PreItem', 'PreComment'); }	
 
+	function doSkinVar($skinType, $param = '') {
+		global $CONF;
+		
+		$ph = array();
+		$ph['url']               = $this->forgeRequestUri();
+		$ph['iteration']         = intrequestvar('iteration') + 1;
+		$ph['_LOGINFORM_NAME']   = _LOGINFORM_NAME;
+		$ph['_LOGINFORM_PWD']    = _LOGINFORM_PWD;
+		$ph['LOGINFORM_NAME']    = _LOGINFORM_NAME;
+		$ph['_LOGIN']            = _LOGIN;
+		$ph['_LOGINFORM_SHARED'] = _LOGINFORM_SHARED;
+		$tpl = file_get_contents($this->getDirectory().'loginform/loginform.tpl');
+		echo parseHtml($tpl,$ph);
+	}
+
+	function doTemplateCommentsVar(&$item, &$comment) {
+		$params = func_get_args();
+		doTemplateVar($item, $params[1]);
+	}
+
+	function doTemplateVar(&$item) {
+		$iid = $item->itemid;
+		$bid = getBlogIDFromItemID($iid);
+		$params = func_get_args();
+		switch ($params[1]) {
+		case 'checkin' :
+			if (!$this->testitemcomment($bid, $iid)) {
+				ob_start(array($this, 'ob_DoNothing'));
+			}
+			break;
+		case 'checkout' :
+			if (!$this->testitemcomment($bid, $iid)) {
+				ob_end_clean();
+			}
+			break;
+		}
+	}
+	
+	function event_InitSkinParse(&$data) {
+		global $blogid;
+		if (!$this->testlogin($data)) {
+			if (intrequestvar('iteration') < $this->getBlogOption($blogid, 'login_iteration')) {
+				$skinName = trim($this->getBlogOption($blogid, 'sub_skin'));
+				if (SKIN::exists($skinName)) {
+					$skin =& SKIN::createFromName($skinName);
+					// copied from NP_SkinSwitcher.php
+					$data['skin'] = new SKIN($skin->getID()); 
+				}
+			} else {
+				$this->doError = TRUE;
+				$this->errorMessage = _ACCSSCNTRL_INVALID_USERPASS;
+				return;
+			}
+		}
+		if (!$this->testblog($data)) {
+			$this->doError = TRUE;
+			$this->errorMessage = _ACCSSCNTRL_CONTENTS_PROHIBIT;
+		}
+	}
+
+	function event_PreSkinParse(&$data) {
+		
+		if (!$this->doError)          return;
+		if ($data['type'] == 'error') return;
+		
+		ob_start(array(&$this, 'ob_DoNothing'));
+	}
+	
+	function event_PostSkinParse(&$data) {
+		
+		if (!$this->doError)          return;
+		if ($data['type'] == 'error') return;
+		
+		ob_end_clean();
+		$GLOBALS['errormessage'] = $this->errorMessage;
+		$data['skin']->parse('error');
+	}
+
+	function event_PreItem(&$data) {
+		$bid = getBlogIDFromItemID($data['item']->itemid);
+		if ($this->testitemcomment($bid,  $data['item']->itemid)) return;
+		
+		$data['item']->title = _ACCSSCNTRL_ITEM_PROHIBIT;
+		$data['item']->body = '';
+		$data['item']->more = '';
+	}
+
+	function event_PreComment(&$data) {
+		global $itemid;
+		$bid = $data['comment']['blogid'];
+		if (!$this->testitemcomment($bid, $itemid)) {
+			$data['comment'] = Array();
+		}
+	}
+
 	function install() {
 		$this->createBlogOption('login_needed',_ACCSSCNTRL_OPTION_PROTECT,'select','nothing',
 		_ACCSSCNTRL_OPTION_NOPROTECT . '|nothing|' .
@@ -98,46 +193,6 @@ class NP_AccessControl extends NucleusPlugin {
 		return FALSE;
 	}
 
-	function event_InitSkinParse(&$data) {
-		global $blogid;
-		if (!$this->testlogin($data)) {
-			if (intrequestvar('iteration') < $this->getBlogOption($blogid, 'login_iteration')) {
-				$skinName = trim($this->getBlogOption($blogid, 'sub_skin'));
-				if (SKIN::exists($skinName)) {
-					$skin =& SKIN::createFromName($skinName);
-					// copied from NP_SkinSwitcher.php
-					$data['skin'] = new SKIN($skin->getID()); 
-				}
-			} else {
-				$this->doError = TRUE;
-				$this->errorMessage = _ACCSSCNTRL_INVALID_USERPASS;
-				return;
-			}
-		}
-		if (!$this->testblog($data)) {
-			$this->doError = TRUE;
-			$this->errorMessage = _ACCSSCNTRL_CONTENTS_PROHIBIT;
-		}
-	}
-
-	function event_PreSkinParse(&$data) {
-		
-		if (!$this->doError)          return;
-		if ($data['type'] == 'error') return;
-		
-		ob_start(array(&$this, 'ob_DoNothing'));
-	}
-	
-	function event_PostSkinParse(&$data) {
-		
-		if (!$this->doError)          return;
-		if ($data['type'] == 'error') return;
-		
-		ob_end_clean();
-		$GLOBALS['errormessage'] = $this->errorMessage;
-		$data['skin']->parse('error');
-	}
-
 	function testblog($data) {
 		global $blogid;
 		$blog = new BLOG($blogid);
@@ -182,23 +237,6 @@ class NP_AccessControl extends NucleusPlugin {
 		return (! strpos(','.$allowedskins.',' , ','.$skinname.',') === TRUE);
 	}
 
-	function event_PreItem(&$data) {
-		$bid = getBlogIDFromItemID($data['item']->itemid);
-		if ($this->testitemcomment($bid,  $data['item']->itemid)) return;
-		
-		$data['item']->title = _ACCSSCNTRL_ITEM_PROHIBIT;
-		$data['item']->body = '';
-		$data['item']->more = '';
-	}
-
-	function event_PreComment(&$data) {
-		global $itemid;
-		$bid = $data['comment']['blogid'];
-		if (!$this->testitemcomment($bid, $itemid)) {
-			$data['comment'] = Array();
-		}
-	}
-
 	function sanitizeRequestUri()
 	{
 		$request_uri = serverVar('SCRIPT_NAME');
@@ -226,44 +264,6 @@ class NP_AccessControl extends NucleusPlugin {
 		if(!$g) return serverVar('REQUEST_URI');
 		
 		return serverVar('SCRIPT_NAME') . '?' . http_build_query($g);
-	}
-
-	function doSkinVar($skinType, $param = '') {
-		global $CONF;
-		
-		$ph = array();
-		$ph['url']               = $this->forgeRequestUri();
-		$ph['iteration']         = intrequestvar('iteration') + 1;
-		$ph['_LOGINFORM_NAME']   = _LOGINFORM_NAME;
-		$ph['_LOGINFORM_PWD']    = _LOGINFORM_PWD;
-		$ph['LOGINFORM_NAME']    = _LOGINFORM_NAME;
-		$ph['_LOGIN']            = _LOGIN;
-		$ph['_LOGINFORM_SHARED'] = _LOGINFORM_SHARED;
-		$tpl = file_get_contents($this->getDirectory().'loginform/loginform.tpl');
-		echo parseHtml($tpl,$ph);
-	}
-
-	function doTemplateCommentsVar(&$item, &$comment) {
-		$params = func_get_args();
-		doTemplateVar($item, $params[1]);
-	}
-
-	function doTemplateVar(&$item) {
-		$iid = $item->itemid;
-		$bid = getBlogIDFromItemID($iid);
-		$params = func_get_args();
-		switch ($params[1]) {
-		case 'checkin' :
-			if (!$this->testitemcomment($bid, $iid)) {
-				ob_start(array($this, 'ob_DoNothing'));
-			}
-			break;
-		case 'checkout' :
-			if (!$this->testitemcomment($bid, $iid)) {
-				ob_end_clean();
-			}
-			break;
-		}
 	}
 }
 
