@@ -248,10 +248,11 @@ class NP_AccessControl extends NucleusPlugin {
 		doTemplateVar($item, $params[1]);
 	}
 
-	function doTemplateVar(&$item, $param1) {
+	function doTemplateVar(&$item) {
 		$iid = $item->itemid;
 		$bid = getBlogIDFromItemID($iid);
-		switch ($param1) {
+		$params = func_get_args();
+		switch ($params[1]) {
 		case 'checkin' :
 			if (!$this->testitemcomment($bid, $iid)) {
 				ob_start(array($this, 'ob_DoNothing'));
