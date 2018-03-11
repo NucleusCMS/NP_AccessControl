@@ -9,7 +9,7 @@ class NP_AccessControl extends NucleusPlugin {
 	function getName() { return 'Access Control'; }
 	function getAuthor()  { return 'Andy, Leo'; }
 	function getURL() { return 'https://github.com/NucleusCMS/NP_AccessControl/'; }
-	function getVersion() { return '1.5'; }
+	function getVersion() { return '1.6'; }
 	
 	function getDescription() { 
 		return _ACCSSCNTRL_DESCRIPTION;
