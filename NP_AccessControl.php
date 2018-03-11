@@ -25,7 +25,8 @@ class NP_AccessControl extends NucleusPlugin {
 	}
 
 	function init() {
-		$this->plugin_admin_dir = str_replace('\\','/',__DIR__) . '/';
+		
+		$this->setDirectory();
 		
 		// include language file for this plugin
 		$language = str_replace( array('\\','/'), '', getLanguageName());
@@ -269,4 +270,19 @@ class NP_AccessControl extends NucleusPlugin {
 		
 		return serverVar('SCRIPT_NAME') . '?' . http_build_query($g);
 	}
+	
+    function setDirectory($path='') {
+        global $DIR_PLUGINS;
+        
+        if ( ! $path ) {
+            $path = $DIR_PLUGINS . get_class($this) . '/';
+        }
+        
+        if(str_contain($path, '\\')) $path = str_replace('\\','/',$path);
+        
+        if(is_dir($path)) $path = rtrim($path,'/').'/';
+        
+        $this->plugin_admin_dir = $path;
+        return $path;
+    }
 }
