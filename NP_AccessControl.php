@@ -205,9 +205,7 @@ class NP_AccessControl extends NucleusPlugin {
 		foreach ($_GET as $name => $val) {
 
 			// when magic quotes off, need to use stripslashes
-			if (!get_magic_quotes_gpc()) {
-				$val = addslashes($val);
-			}
+			$val = addslashes($val);
 
 			list($val,$tmp) = explode('\\', $val);
 			$request_uri .= sprintf("?%s=%s", $name, $val);
@@ -216,39 +214,38 @@ class NP_AccessControl extends NucleusPlugin {
 		$_SERVER['REQUEST_URI'] = $request_uri;
 	}
 
-
-	function doSkinVar($skinType, $param = '') {
-		$this->sanitizeRequestUri();
-//	sucoshi+yamabuki
-		$search=array('?page=0','?action=logout');
-		$zerouri=str_replace($search,'',$_SERVER['REQUEST_URI']);
-		$url = 'http://' . $_SERVER["HTTP_HOST"] . $zerouri;
-//		$url = 'http://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
-		$iteration = intrequestvar('iteration') + 1;
-		$formdata =<<<LOGINFORM
-	<form method="post" action="$url">
-	  <div class="loginform">
-		<input type="hidden" name="action" value="login" />
-		<input type="hidden" name="iteration" value="$iteration" />
-		<label for="nucleus_lf_name" accesskey="l"><%text(_LOGINFORM_NAME)%></label>: <input id="nucleus_lf_name" name="login" size="10" value="" class="formfield" />
-		<br />
-		<label for="nucleus_lf_pwd"><%text(_LOGINFORM_PWD)%></label>: <input id="nucleus_lf_pwd" name="password" size="10" type="password" value="" class="formfield" />
-		<br />
-		<input type="submit" value="<%text(_LOGIN)%>" class="formbutton" />
-		<br />
-		<input type="checkbox" value="1" name="shared" id="nucleus_lf_shared" /><label for="nucleus_lf_shared"><%text(_LOGINFORM_SHARED)%></label>
-	  </div>
-	</form>
-LOGINFORM;
-
-		$actions = new ACTIONS('index');
-		$parser = new PARSER(array('text'), $actions);
-		$actions->setParser($parser);
-		$parser->parse($formdata);
+	function forgeRequestUri() {
+		if(!$_GET) return serverVar('REQUEST_URI');
+		
+		$g = $_GET;
+		foreach($g as $k=>$v) {
+			if    ($k=='page'   && $v==0)        unset($g['page']);
+			elseif($k=='action' && $v=='logout') unset($g['action']);
+			else $g[$k] = addslashes($v);
+		}
+		if(!$g) return serverVar('REQUEST_URI');
+		
+		return serverVar('SCRIPT_NAME') . '?' . http_build_query($g);
 	}
 
-	function doTemplateCommentsVar(&$item, &$comment, $param1) {
-		doTemplateVar($item, $param1);
+	function doSkinVar($skinType, $param = '') {
+		global $CONF;
+		
+		$ph = array();
+		$ph['url']               = $this->forgeRequestUri();
+		$ph['iteration']         = intrequestvar('iteration') + 1;
+		$ph['_LOGINFORM_NAME']   = _LOGINFORM_NAME;
+		$ph['_LOGINFORM_PWD']    = _LOGINFORM_PWD;
+		$ph['LOGINFORM_NAME']    = _LOGINFORM_NAME;
+		$ph['_LOGIN']            = _LOGIN;
+		$ph['_LOGINFORM_SHARED'] = _LOGINFORM_SHARED;
+		$tpl = file_get_contents($this->getDirectory().'loginform/loginform.tpl');
+		echo parseHtml($tpl,$ph);
+	}
+
+	function doTemplateCommentsVar(&$item, &$comment) {
+		$params = func_get_args();
+		doTemplateVar($item, $params[1]);
 	}
 
 	function doTemplateVar(&$item, $param1) {
@@ -267,5 +264,35 @@ LOGINFORM;
 			break;
 		}
 	}
+}
 
+if(!function_exists('parseHtml')) {
+    function parseHtml($html='',$ph=array()) { // $ph is placeholders
+        if(!is_array($ph)) {
+            $ph = func_get_args();
+        }
+        
+        $esc = md5($_SERVER['REQUEST_TIME_FLOAT'].mt_rand());
+        
+        foreach($ph as $k=>$v) {
+            if(strpos($html,'{%')===false) break;
+            
+            if(strpos($v,'{%')!==false) {
+                $v = str_replace('{%',"[{$esc}%",$v);
+            }
+            $html = str_replace("{%{$k}%}", $v, $html);
+            if(strpos($html,"{%{$k}:hsc%}")!==false)
+            {
+                $html = str_replace("{%{$k}:hsc%}", hsc($v), $html);
+            }
+            if(strpos($html,"{%{$k}:urlencode%}")!==false)
+            {
+                $html = str_replace("{%{$k}:urlencode%}", urlencode($v), $html);
+            }
+        }
+        if(strpos($html,'{'.$esc.'%')!==false) {
+            $html = str_replace('{'.$esc.'%','{%',$html);
+        }
+        return $html;
+    }
 }
