@@ -31,7 +31,7 @@ class NP_AccessControl extends NucleusPlugin {
 		$language = str_replace( array('\\','/'), '', getLanguageName());
 		$lang_dir = $this->getDirectory() . 'lang/';
 		if (is_file($lang_dir.$language.'.php'))
-			include_once($$lang_dir.$language.'.php');
+			include_once($lang_dir.$language.'.php');
 		else
 			include_once($lang_dir.'english.php');
 		
