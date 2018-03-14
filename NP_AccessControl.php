@@ -275,6 +275,7 @@ class NP_AccessControl extends NucleusPlugin {
         if(str_contain($path, '\\')) $path = str_replace('\\','/',$path);
         
         if(is_dir($path)) $path = rtrim($path,'/').'/';
+        else              $path = $this->getDirectory();
         
         $this->plugin_admin_dir = $path;
         return $path;
