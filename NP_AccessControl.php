@@ -15,14 +15,7 @@ class NP_AccessControl extends NucleusPlugin {
 		return _ACCSSCNTRL_DESCRIPTION;
 	}
 
-	function supportsFeature($what) {
-		switch($what){
-			case 'SqlTablePrefix':
-				return 1;
-			default:
-				return 0;
-		}
-	}
+	function supportsFeature($what) { return $what=='SqlTablePrefix';}
 
 	function init() {
 		
