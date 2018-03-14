@@ -64,7 +64,8 @@ class NP_AccessControl extends NucleusPlugin {
 		switch ($params[1]) {
 		case 'checkin' :
 			if (!$this->testitemcomment($bid, $iid)) {
-				ob_start(array($this, 'ob_DoNothing'));
+				$array = array(&$this, 'ob_DoNothing');
+				ob_start($array);
 			}
 			break;
 		case 'checkout' :
